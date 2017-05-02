@@ -1,0 +1,51 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "NewStorageAccountType": {
+      "type": "string",
+      "defaultValue": "Standard_LRS",
+      "allowedValues": [
+        "Standard_LRS",
+        "Standard_ZRS",
+        "Standard_GRS",
+        "Standard_RAGRS",
+        "Premium_LRS"
+      ]
+    },
+    "StorageAccountName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the New Storage Account"
+      }
+    }
+
+  },
+  "variables": {
+    "NewStorageAccountName": "[concat(parameters('StorageAccountName'))]",
+    "NewStorageAccountNameUnique": "[concat(parameters('StorageAccountName'),uniqueString(resourceGroup().id))]"
+  },
+  "resources": [
+    {
+      "name": "[variables('NewStorageAccountNameUnique')]",
+      "type": "Microsoft.Storage/storageAccounts",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2015-06-15",
+      "dependsOn": [],
+      "tags": {
+        "displayName": "[parameters('StorageAccountName')]"
+      },
+      "properties": {
+        "accountType": "[parameters('NewStorageAccountType')]"
+      }
+    }
+
+  ],
+  "outputs": {
+    "created-storage-account-name": {
+      "type": "string",
+      "value": "[variables('NewStorageAccountNameUnique')]"
+    }
+  }
+}
+

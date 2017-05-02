@@ -1,0 +1,36 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "WebServerName": {
+      "value": null
+    },
+    "WebServerAdminUserName": {
+      "value": null
+    },
+    "WebServerAdminPassword": {
+      "value": null
+    },
+    "WebServerWindowsOSVersion": {
+      "value": null
+    },
+    "WebServerStorageAccountName": {
+      "value": null
+    },
+    "WebServerStorageAccountResourceGroup": {
+      "value": null
+    },
+    "WebServerVirtualNetworkName": {
+      "value": null
+    },
+    "WebServerVirtualNetworkResourceGroup": {
+      "value": null
+    },
+    "WebServerAvailabilitySetName": {
+      "value": null
+    },
+    "WebServerInstances": {
+      "value": 1
+    }
+  }
+}

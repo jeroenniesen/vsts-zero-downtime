@@ -1,0 +1,100 @@
+﻿{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "loadbalancers_Name": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the New Load Balancer"
+      }
+    },
+    "publicIPAddressType": {
+      "type": "string",
+      "defaultValue": "Dynamic",
+      "allowedValues": [
+        "Dynamic",
+        "Static"
+      ]
+    },
+    "dnsNameforLBIP": {
+      "type": "string",
+      "metadata": {
+        "description": "Unique DNS name"
+      }
+    }
+  },
+  "variables": {
+    "nicName": "[concat(parameters('loadbalancers_Name'), '-NIC')]",
+    "publicIPAddressName": "[concat(parameters('loadbalancers_Name'), '-VIP')]",
+    "publicIPAddressID": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicIPAddressName'))]",
+    "lbID": "[resourceId('Microsoft.Network/loadBalancers',parameters('loadbalancers_Name'))]",
+    "lbName": "[parameters('loadbalancers_Name')]",
+    "lbFrontEndName": "[concat(variables('lbName'), '-FrontEnd')]",
+    "lbBackEndName": "[concat(variables('lbName'), '-BackEnd')]",
+    "frontEndIPConfigID": "[concat(concat(variables('lbID'),'/frontendIPConfigurations/'), concat(parameters('loadbalancers_Name'), '-FrontEnd'))]"
+  },
+  "resources": [
+    {
+      "apiVersion": "2015-06-15",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[variables('publicIPAddressName')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "publicIPAllocationMethod": "[parameters('publicIPAddressType')]",
+        "dnsSettings": {
+          "domainNameLabel": "[parameters('dnsNameforLBIP')]"
+        }
+      }
+    },
+    {
+      "apiVersion": "2015-06-15",
+      "name": "[variables('lbName')]",
+      "type": "Microsoft.Network/loadBalancers",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'))]"
+      ],
+      "properties": {
+        "frontendIPConfigurations": [
+          {
+            "name": "[variables('lbFrontEndName')]",
+            "properties": {
+              "publicIPAddress": {
+                "id": "[variables('publicIPAddressID')]"
+              }
+            }
+          }
+        ],
+        "backendAddressPools": [
+          {
+            "name": "[variables('lbBackEndName')]"
+          }
+        ],
+        "inboundNatRules": [
+          {
+            "name": "HTTP",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[variables('frontEndIPConfigID')]"
+              },
+              "protocol": "tcp",
+              "frontendPort": 80,
+              "backendPort": 80,
+              "enableFloatingIP": false
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "outputs": {
+    "created-loadbalancer-name": {
+      "type": "string",
+      "value": "[variables('lbName')]"
+    },
+    "created-loadbalancer-backend-name": {
+      "type": "string",
+      "value": "[variables('lbBackEndName')]"
+    }
+  }
+}

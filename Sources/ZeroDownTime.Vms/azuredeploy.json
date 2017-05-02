@@ -1,0 +1,152 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "WebServerName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "WebServerAdminUserName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "WebServerAdminPassword": {
+      "type": "securestring"
+    },
+    "WebServerWindowsOSVersion": {
+      "type": "string",
+      "defaultValue": "2012-R2-Datacenter",
+      "allowedValues": [
+        "2008-R2-SP1",
+        "2012-Datacenter",
+        "2012-R2-Datacenter",
+        "2016-Datacenter"
+      ]
+    },
+    "WebServerStorageAccountName": {
+      "type": "string",
+      "defaultValue": "jnvmstorageapezwblmwdjao"
+    },
+    "WebServerStorageAccountResourceGroup": {
+      "type": "string",
+      "defaultValue": "TST-RSG-Storage"
+    },
+    "WebServerVirtualNetworkName": {
+      "type": "string",
+      "defaultValue": "TST-VNET-01"
+    },
+    "WebServerVirtualNetworkResourceGroup": {
+      "type": "string",
+      "defaultValue": "TST-RSG-VNET"
+    },
+    "WebServerAvailabilitySetName": {
+      "type": "string",
+      "defaultValue": "myavs"
+    },
+    "WebServerInstances": {
+      "type": "int",
+      "defaultValue": 1
+    }
+  },
+  "variables": {
+    "WebServerImagePublisher": "MicrosoftWindowsServer",
+    "WebServerImageOffer": "WindowsServer",
+    "WebServerOSDiskName": "WebServerOSDisk",
+    "WebServerVmSize": "Standard_D2_v2",
+    "WebServerVnetID": "[resourceId(parameters('WebServerVirtualNetworkResourceGroup'), 'Microsoft.Network/virtualNetworks', parameters('WebServerVirtualNetworkName'))]",
+    "WebServerSubnetRef": "[concat(variables('WebServerVnetID'), '/subnets/', 'Back-End')]",
+    "WebServerStorageAccountContainerName": "vhds",
+    "WebServerNicName": "[concat(parameters('WebServerName'), 'NIC')]"
+  },
+  "resources": [
+    {
+      "name": "[concat(concat(variables('WebServerNicName'),'-'), copyIndex())]",
+      "type": "Microsoft.Network/networkInterfaces",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2016-03-30",
+      "dependsOn": [],
+      "tags": {
+        "displayName": "WebServerNic"
+      },
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[variables('WebServerSubnetRef')]"
+              }
+            }
+          }
+        ]
+      },
+      "copy": {
+        "name": "nicLoop",
+        "count": "[parameters('WebServerInstances')]"
+      }
+    },
+    {
+      "name": "[concat(concat(parameters('WebServerName'),'-'), copyIndex())]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2015-06-15",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces',concat(concat(variables('WebServerNicName'),'-'), copyIndex()))]"
+      ],
+      "tags": {
+        "displayName": "WebServer"
+      },
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[variables('WebServerVmSize')]"
+        },
+        "osProfile": {
+          "computerName": "[parameters('WebServerName')]",
+          "adminUsername": "[parameters('WebServerAdminUsername')]",
+          "adminPassword": "[parameters('WebServerAdminPassword')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "[variables('WebServerImagePublisher')]",
+            "offer": "[variables('WebServerImageOffer')]",
+            "sku": "[parameters('WebServerWindowsOSVersion')]",
+            "version": "latest"
+          },
+          "osDisk": {
+            "name": "WebServerOSDisk",
+            "vhd": {
+              "uri": "[concat(reference(resourceId(parameters('WebServerStorageAccountResourceGroup'), 'Microsoft.Storage/storageAccounts', parameters('WebServerStorageAccountName')), '2016-01-01').primaryEndpoints.blob, variables('WebServerStorageAccountContainerName'), '/', variables('WebServerOSDiskName'), '.vhd')]"
+            },
+            "caching": "ReadWrite",
+            "createOption": "FromImage"
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', concat(concat(variables('WebServerNicName'),'-'), copyIndex()))]"
+            }
+          ]
+        },
+        "availabilitySet": {
+          "id": "[resourceId('Microsoft.Compute/availabilitySets',parameters('WebServerAvailabilitySetName'))]"
+        }
+      },
+      "copy": {
+        "name": "vmLoop",
+        "count": "[parameters('WebServerInstances')]"
+      }
+    }
+  ],
+  "outputs": {
+    "created-vm-name-prefix": {
+      "type": "string",
+      "value": "[concat(parameters('WebServerName'),'-')]"
+    },
+    "created-nic-name-prefix": {
+      "type": "string",
+      "value": "[concat(variables('WebServerNicName'),'-')]"
+    }
+  }
+}

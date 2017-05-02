@@ -1,0 +1,49 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "virtualNetworks_name": {
+      "defaultValue": "My-Vnet",
+      "type": "String"
+    }
+  },
+  "variables": {
+    "virtualNetworkName": "[parameters('virtualNetworks_name')]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/virtualNetworks",
+      "name": "[variables('virtualNetworkName')]",
+      "apiVersion": "2016-03-30",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "10.10.0.0/16"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "Back-End",
+            "properties": {
+              "addressPrefix": "10.10.1.0/24"
+            }
+          },
+          {
+            "name": "Front-End",
+            "properties": {
+              "addressPrefix": "10.10.0.0/24"
+            }
+          }
+        ]
+      },
+      "dependsOn": []
+    }
+  ],
+  "outputs": {
+    "created-vnet-name": {
+      "type": "string",
+      "value": "[variables('virtualNetworkName')]"
+    }
+  }
+}
